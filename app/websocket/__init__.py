@@ -52,12 +52,7 @@ class WebSocket(Sock):
                 data = ws.receive()
                 data = json.loads(data)
                 event = data["event"]
-                
-                
                 print("event.", event)
-                print("Data received",data)
-                
-                
                 if event in self.events:
                     for func in self.events[event]:
                         func(data["data"], ws, *args, **kwargs)
