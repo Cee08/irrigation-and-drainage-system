@@ -16,6 +16,13 @@ from app.models import (
     build_sample_db,
     db,
 )
+from flask_security import (
+    Security,
+    SQLAlchemyUserDatastore,
+    current_user,
+    login_required
+)
+from flask import current_app
 from flask_mailman import Mail, EmailMessage
 generated_strings = set()
 
@@ -28,17 +35,33 @@ def generate_unique_string(length=10):
             generated_strings.add(random_string)
             return random_string
 
+def get_user_datastore()->SQLAlchemyUserDatastore:
+    return current_app.config['USER_DATA_STORE']
 
+def get_admin_user():
+    with current_app.app_context():
+        admin_user_email=get_option("company_admin_user")
+        if admin_user_email:
+            user=current_app.user_datastore
+        return None
+
+def get_option(name:str):
+    with current_app.app_context():
+        option = Options.query.get(name)
+        if not option:
+            return None
+        return option.option_value
 def add_or_update_option(name, value):
-    option = Options.query.get(name)
-    if not option:
-        option = Options(option_name=name, option_value=value)
+    with current_app.app_context():
+        option = Options.query.get(name)
+        if not option:
+            option = Options(option_name=name, option_value=value)
+            db.session.add(option)
+        else:
+            option.option_value = value
         db.session.add(option)
-    else:
-        option.option_value = value
-        db.session.add(option)
-    db.session.commit()
-    return option.to_dict()
+        db.session.commit()
+        return option.to_dict()
 
 def send_invitation_email():
     pass

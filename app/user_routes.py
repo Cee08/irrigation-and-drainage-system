@@ -23,6 +23,8 @@ user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(datastore=user_datastore)
 
 
+
+
 @user_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
     # Check if there are existing users in the database
@@ -52,6 +54,8 @@ def setup():
 
         add_or_update_option("company_name", company)
         add_or_update_option("company_location", location)
+        add_or_update_option("company_admin_user", email)
+        
 
         try:
             # Check if roles already exist before adding
@@ -70,20 +74,18 @@ def setup():
             if not super_role:
                 super_role = Role(name="super")
                 db.session.add(super_role)
-
+            # print([r.to_dict() for r in [user_role, super_role, admin_role]])
             db.session.commit()
             # Create the initial user if it doesn't already exist
             if not user_datastore.find_user(email=email,case_insensitive=True):
                 print("User Not There")
-                user_datastore.create_user(roles=[user_role, super_role, admin_role],
-                                                  first_name=first_name,
+                user_datastore.create_user(first_name=first_name,
                                                   last_name=last_name,
                                                   email=email,
-                                                  password=hash_password(password))
+                                                  password=hash_password(password),roles=[user_role, super_role, admin_role])
+                
                 db.session.commit()
-                build_sample_db(user_bp, user_datastore)
-            db.session.commit()
-            return redirect(url_for('security.login'))
+                return redirect(url_for('security.login'))
             # return "Done"
         except Exception as e:
             print(f"An error occurred: {e}")
